@@ -20,6 +20,12 @@ export function useChat() {
 
   const sendMessage = useCallback(
     async (content: string) => {
+      // Empty input guard
+      if (!content.trim()) return;
+
+      // Prevent rapid re-submits
+      if (isLoading) return;
+
       const userMessage: Message = {
         id: crypto.randomUUID(),
         role: "user",
@@ -40,20 +46,42 @@ export function useChat() {
 
       try {
         abortRef.current = new AbortController();
+
+        // Truncate message history: only send last 20 messages to avoid token limits
+        const messagesToSend = updatedMessages.slice(-20).map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: updatedMessages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          }),
+          body: JSON.stringify({ messages: messagesToSend }),
           signal: abortRef.current.signal,
         });
 
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
+          // Read JSON error body from the API
+          let errorText = `API error: ${response.status}`;
+          try {
+            const errorBody = await response.json();
+            if (errorBody.error) {
+              errorText = errorBody.error;
+            }
+          } catch {
+            // If we can't parse JSON, use the status text
+          }
+          const errorMessage: Message = {
+            ...assistantMessage,
+            content: `SYSTEM ERROR: ${errorText}`,
+          };
+          const errorMessages = [...updatedMessages, errorMessage];
+          setMessages(errorMessages);
+          localStorage.setItem(
+            "dexai-history",
+            JSON.stringify(errorMessages)
+          );
+          return;
         }
 
         const reader = response.body!.getReader();
@@ -105,18 +133,27 @@ export function useChat() {
         localStorage.setItem("dexai-history", JSON.stringify(finalMessages));
       } catch (error) {
         if ((error as Error).name === "AbortError") return;
+        // Network errors and other fetch failures
+        const errorText =
+          error instanceof Error
+            ? error.message
+            : "Unable to process query. Please try again.";
         const errorMessage: Message = {
           ...assistantMessage,
-          content:
-            "SYSTEM ERROR: Unable to process query. Please try again.",
+          content: `SYSTEM ERROR: ${errorText}`,
         };
-        setMessages([...updatedMessages, errorMessage]);
+        const errorMessages = [...updatedMessages, errorMessage];
+        setMessages(errorMessages);
+        localStorage.setItem(
+          "dexai-history",
+          JSON.stringify(errorMessages)
+        );
       } finally {
         setIsLoading(false);
         abortRef.current = null;
       }
     },
-    [messages]
+    [messages, isLoading]
   );
 
   const clearHistory = useCallback(() => {

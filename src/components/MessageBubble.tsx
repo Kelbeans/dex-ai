@@ -4,7 +4,10 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import type { Message } from "@/types/chat";
 import { CardRenderer } from "./cards/CardRenderer";
+import { ErrorMessage } from "./ErrorMessage";
 import { useTypeGlow } from "./TypeGlow";
+
+const SYSTEM_ERROR_PREFIX = "SYSTEM ERROR:";
 
 interface MessageBubbleProps {
   message: Message;
@@ -26,6 +29,26 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       }
     }
   }, [message.cards, setActiveType]);
+
+  // Detect error messages from assistant
+  const isError =
+    !isUser && message.content.startsWith(SYSTEM_ERROR_PREFIX);
+
+  if (isError) {
+    const errorText = message.content.slice(SYSTEM_ERROR_PREFIX.length).trim();
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="flex justify-start"
+      >
+        <div className="max-w-[80%]">
+          <ErrorMessage message={errorText} />
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

@@ -16,6 +16,8 @@ import {
 
 export const runtime = 'nodejs';
 
+const API_TIMEOUT_MS = 30_000;
+
 async function executeTool(
   name: string,
   input: Record<string, string>
@@ -34,17 +36,42 @@ async function executeTool(
         return JSON.stringify({ error: `Unknown tool: ${name}` });
     }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown error occurred';
-    return JSON.stringify({ error: message });
+    // Provide helpful error messages for PokeAPI failures
+    if (error instanceof Error) {
+      if (error.message.includes('404') || error.message.includes('not found')) {
+        const identifier = input.name_or_id || input.pokemon_name || input.type_name || input.query || 'unknown';
+        return JSON.stringify({
+          error: `Pokemon '${identifier}' not found. Please check the name and try again.`,
+        });
+      }
+      return JSON.stringify({ error: error.message });
+    }
+    return JSON.stringify({ error: 'Unknown error occurred' });
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Request timed out'));
+    }, ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
 }
 
 export async function POST(request: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured' }),
+      JSON.stringify({ error: 'API key not configured' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -80,13 +107,16 @@ export async function POST(request: Request) {
     const MAX_TOOL_ITERATIONS = 10;
 
     for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-5-20250929',
-        max_tokens: 4096,
-        system: SYSTEM_PROMPT,
-        tools: AI_TOOLS,
-        messages: currentMessages,
-      });
+      const response = await withTimeout(
+        anthropic.messages.create({
+          model: 'claude-sonnet-4-5-20250929',
+          max_tokens: 4096,
+          system: SYSTEM_PROMPT,
+          tools: AI_TOOLS,
+          messages: currentMessages,
+        }),
+        API_TIMEOUT_MS
+      );
 
       // If Claude stopped because it wants to use tools, execute them
       if (response.stop_reason === 'tool_use') {
@@ -100,18 +130,30 @@ export async function POST(request: Request) {
           { role: 'assistant', content: response.content as ContentBlock[] },
         ];
 
-        // Execute each tool and collect results
+        // Execute each tool and collect results (wrapped in try/catch per tool)
         const toolResults: ToolResultBlockParam[] = await Promise.all(
           toolUseBlocks.map(async (toolUse) => {
-            const result = await executeTool(
-              toolUse.name,
-              toolUse.input as Record<string, string>
-            );
-            return {
-              type: 'tool_result' as const,
-              tool_use_id: toolUse.id,
-              content: result,
-            };
+            try {
+              const result = await executeTool(
+                toolUse.name,
+                toolUse.input as Record<string, string>
+              );
+              return {
+                type: 'tool_result' as const,
+                tool_use_id: toolUse.id,
+                content: result,
+              };
+            } catch (toolError) {
+              const errorMsg =
+                toolError instanceof Error
+                  ? toolError.message
+                  : 'Tool execution failed';
+              return {
+                type: 'tool_result' as const,
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({ error: errorMsg }),
+              };
+            }
           })
         );
 
@@ -173,6 +215,25 @@ export async function POST(request: Request) {
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    // Handle rate limiting from Claude API
+    if (
+      error instanceof Anthropic.RateLimitError ||
+      (error instanceof Error && 'status' in error && (error as { status: number }).status === 429)
+    ) {
+      return new Response(
+        JSON.stringify({ error: 'Rate limited. Please wait a moment.' }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle timeout
+    if (error instanceof Error && error.message === 'Request timed out') {
+      return new Response(
+        JSON.stringify({ error: 'Request timed out. Please try again.' }),
+        { status: 504, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const message =
       error instanceof Error ? error.message : 'Internal server error';
     return new Response(
