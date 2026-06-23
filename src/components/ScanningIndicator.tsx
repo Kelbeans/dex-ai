@@ -33,6 +33,19 @@ export function ScanningIndicator() {
             ease: "easeInOut",
           }}
         />
+        {/* Horizontal sweep line */}
+        <div className="relative mt-1 h-px w-48 overflow-hidden">
+          <motion.div
+            className="absolute inset-y-0 w-12 bg-gradient-to-r from-transparent via-red-500/30 to-transparent"
+            animate={{ x: ["-100%", "100%"] }}
+            transition={{
+              duration: 1.8,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{ width: "3rem" }}
+          />
+        </div>
       </div>
     </div>
   );

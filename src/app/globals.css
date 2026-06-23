@@ -30,6 +30,36 @@ body {
   }
 }
 
+@keyframes scan-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.97;
+  }
+  75% {
+    opacity: 0.99;
+  }
+}
+
 .scanline-overlay {
   position: fixed;
   inset: 0;
@@ -49,6 +79,7 @@ body {
     rgba(255, 255, 255, 0.02) 2px,
     rgba(255, 255, 255, 0.02) 4px
   );
+  opacity: 0.5;
 }
 
 .scanline-overlay::after {
@@ -58,8 +89,27 @@ body {
   background: linear-gradient(
     to bottom,
     transparent 50%,
-    rgba(220, 38, 38, 0.015) 50%
+    rgba(220, 38, 38, 0.01) 50%
   );
   background-size: 100% 4px;
   animation: scanline 8s linear infinite;
+}
+
+.scan-sweep-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(220, 38, 38, 0.3),
+    rgba(220, 38, 38, 0.6),
+    rgba(220, 38, 38, 0.3),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 50;
+  animation: scan-sweep 4s linear infinite;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.3);
 }
