@@ -44,7 +44,8 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
         onBlur={() => setIsFocused(false)}
         disabled={disabled}
         placeholder="Ask about any Pokemon..."
-        className={`flex-1 rounded-lg border border-gray-700 bg-gray-900/50 px-4 py-2 font-mono text-sm text-gray-200 placeholder-gray-600 outline-none transition-all duration-200 disabled:opacity-40 ${
+        enterKeyHint="send"
+        className={`h-12 flex-1 rounded-lg border border-gray-700 bg-gray-900/50 px-4 py-2 font-mono text-sm text-gray-200 placeholder-gray-600 outline-none transition-all duration-200 disabled:opacity-40 md:h-10 ${
           isFocused
             ? "border-red-500/50 ring-2 ring-red-500/70 shadow-[0_0_12px_rgba(220,38,38,0.15)]"
             : "focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20"
@@ -53,7 +54,7 @@ export function ChatInput({ onSubmit, disabled }: ChatInputProps) {
       <motion.button
         type="submit"
         disabled={disabled || !value.trim()}
-        className="rounded-lg border border-red-700/50 bg-red-950/30 px-4 py-2 font-mono text-xs font-bold tracking-wider text-red-400 transition-colors hover:bg-red-900/40 disabled:opacity-40 disabled:hover:bg-red-950/30"
+        className="min-h-[44px] min-w-[44px] rounded-lg border border-red-700/50 bg-red-950/30 px-4 py-2 font-mono text-xs font-bold tracking-wider text-red-400 transition-colors hover:bg-red-900/40 disabled:opacity-40 disabled:hover:bg-red-950/30 md:min-h-0 md:min-w-0"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >

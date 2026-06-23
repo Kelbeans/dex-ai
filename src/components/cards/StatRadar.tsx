@@ -40,7 +40,7 @@ export function StatRadar({ stats, primaryType }: StatRadarProps) {
   const dataPolygon = dataPoints.map(([x, y]) => `${x},${y}`).join(" ");
 
   return (
-    <svg viewBox="0 0 200 200" className="mx-auto h-48 w-48">
+    <svg viewBox="0 0 200 200" className="mx-auto h-36 w-36 md:h-48 md:w-48">
       {/* Reference hexagons */}
       {[0.33, 0.66, 1].map((scale) => (
         <polygon

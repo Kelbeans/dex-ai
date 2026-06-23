@@ -42,7 +42,7 @@ export function ComparisonCard({ data }: ComparisonCardProps) {
       </p>
 
       {/* Headers */}
-      <div className="mb-3 grid grid-cols-2 gap-4">
+      <div className="mb-3 flex flex-col gap-4 md:flex-row md:gap-4">
         <PokemonHeader pokemon={pokemon1} />
         <PokemonHeader pokemon={pokemon2} />
       </div>

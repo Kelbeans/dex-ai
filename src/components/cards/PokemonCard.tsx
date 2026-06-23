@@ -22,7 +22,7 @@ export function PokemonCard({ data }: PokemonCardProps) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="mt-3 rounded-lg border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+      className="mt-3 rounded-lg border border-white/10 bg-white/5 p-2 backdrop-blur-sm md:p-4"
     >
       {/* Header: artwork + name */}
       <div className="flex items-start gap-4">
@@ -36,7 +36,7 @@ export function PokemonCard({ data }: PokemonCardProps) {
             alt={data.name}
             width={120}
             height={120}
-            className="h-[120px] w-[120px] object-contain"
+            className="h-[80px] w-[80px] object-contain md:h-[120px] md:w-[120px]"
           />
         </div>
         <div className="flex flex-col gap-1">
