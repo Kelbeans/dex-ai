@@ -10,11 +10,11 @@ function DeviceFrameInner({ children }: DeviceFrameProps) {
   const { color } = useTypeGlow();
 
   return (
-    <div className="flex h-dvh w-full items-center justify-center p-0 md:p-4">
+    <div className="flex h-dvh w-full">
       <div
-        className="relative flex h-full w-full max-w-2xl flex-col overflow-hidden rounded-none border-0 border-red-900/60 bg-[var(--color-chrome)] transition-all duration-700 md:rounded-2xl md:border"
+        className="relative flex h-full w-full flex-col overflow-hidden bg-[var(--color-chrome)] transition-all duration-700"
         style={{
-          boxShadow: `0 0 30px ${color}20, 0 0 60px ${color}10, inset 0 0 20px ${color}08`,
+          boxShadow: `inset 0 0 30px ${color}08`,
           animation: "flicker 4s ease-in-out infinite",
         }}
       >
