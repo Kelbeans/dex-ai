@@ -25,14 +25,28 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         }`}
       >
         <p className="whitespace-pre-wrap">{message.content}</p>
-        {message.cards?.map((card, index) => (
-          <div
-            key={index}
-            className="mt-2 rounded border border-red-900/30 bg-red-950/10 px-3 py-2 text-xs text-gray-400"
-          >
-            Pokemon card: {card.type}
-          </div>
-        ))}
+        {message.cards?.map((card, index) => {
+          const cardData = card.data as Record<string, unknown>;
+          const pokemonName = typeof cardData.name === "string" ? cardData.name : null;
+          return (
+            <div
+              key={index}
+              className="mt-2 rounded border border-cyan-700/40 bg-cyan-950/20 px-3 py-2"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-400/80">
+                POKEMON DATA
+              </p>
+              <p className="mt-1 text-xs text-gray-300">
+                <span className="text-cyan-300">{card.type}</span>
+                {pokemonName && (
+                  <span className="ml-2 text-gray-400">
+                    &mdash; {pokemonName}
+                  </span>
+                )}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </motion.div>
   );
