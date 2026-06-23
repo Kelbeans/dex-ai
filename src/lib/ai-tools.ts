@@ -64,4 +64,20 @@ export const AI_TOOLS: Tool[] = [
       required: ['query'],
     },
   },
+  {
+    name: 'get_pokemon_forms',
+    description:
+      'Get all alternate forms of a Pokemon (Mega Evolutions, Gigantamax, regional variants like Alolan, Galarian, Hisuian, Paldean). Returns sprites and type changes for each form.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        pokemon_name: {
+          type: 'string',
+          description:
+            'Base Pokemon name (e.g., "charizard", "meowth")',
+        },
+      },
+      required: ['pokemon_name'],
+    },
+  },
 ];

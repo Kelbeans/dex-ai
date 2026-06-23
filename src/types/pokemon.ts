@@ -1,3 +1,13 @@
+export interface PokemonForm {
+  id: number;
+  name: string;
+  formName: string;
+  formType: 'mega' | 'gmax' | 'alolan' | 'galarian' | 'hisuian' | 'paldean' | 'other';
+  types: string[];
+  spriteUrl: string;
+  stats?: Pokemon['stats'];
+}
+
 export interface Pokemon {
   id: number;
   name: string;
@@ -20,6 +30,7 @@ export interface Pokemon {
   weight: number;
   genus: string;
   flavorText: string;
+  forms?: PokemonForm[];
 }
 
 export interface EvolutionStage {

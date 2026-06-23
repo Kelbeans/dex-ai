@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getPokemon, getEvolutionChain, getTypeEffectiveness } from './pokeapi';
+import { getPokemon, getPokemonForms, getEvolutionChain, getTypeEffectiveness } from './pokeapi';
 
 describe('pokeapi', () => {
   describe('getPokemon', () => {
@@ -51,6 +51,35 @@ describe('pokeapi', () => {
       expect(type.type).toBe('fire');
       expect(type.doubleDamageTo).toContain('grass');
       expect(type.halfDamageFrom).toContain('fire');
+    }, 30000);
+  });
+
+  describe('getPokemonForms', () => {
+    it('returns mega forms for charizard', async () => {
+      const forms = await getPokemonForms('charizard');
+      expect(forms.length).toBeGreaterThan(0);
+      const megaX = forms.find(f => f.name.includes('mega-x'));
+      expect(megaX).toBeDefined();
+      expect(megaX!.formType).toBe('mega');
+      expect(megaX!.types).toContain('fire');
+    }, 30000);
+
+    it('returns regional forms for meowth', async () => {
+      const forms = await getPokemonForms('meowth');
+      const alolan = forms.find(f => f.formType === 'alolan');
+      expect(alolan).toBeDefined();
+      expect(alolan!.types).toContain('dark');
+    }, 30000);
+
+    it('returns empty array for pokemon without forms', async () => {
+      const forms = await getPokemonForms('pidgey');
+      expect(forms).toEqual([]);
+    }, 30000);
+
+    it('returns gmax forms for pikachu', async () => {
+      const forms = await getPokemonForms('pikachu');
+      const gmax = forms.find(f => f.formType === 'gmax');
+      expect(gmax).toBeDefined();
     }, 30000);
   });
 });

@@ -1,4 +1,4 @@
-import type { Pokemon, EvolutionStage, TypeEffectiveness } from '@/types/pokemon';
+import type { Pokemon, PokemonForm, EvolutionStage, TypeEffectiveness } from '@/types/pokemon';
 
 const BASE_URL = 'https://pokeapi.co/api/v2';
 
@@ -87,6 +87,17 @@ export async function getPokemon(nameOrId: string | number): Promise<Pokemon> {
   );
   const flavorText = flavorEntry ? cleanFlavorText(flavorEntry.flavor_text) : '';
 
+  // Fetch forms but don't let failure break the main response
+  let forms: PokemonForm[] | undefined;
+  try {
+    const fetchedForms = await getPokemonForms(identifier);
+    if (fetchedForms.length > 0) {
+      forms = fetchedForms;
+    }
+  } catch {
+    // Forms are optional — silently ignore failures
+  }
+
   return {
     id: pokemonData.id,
     name: pokemonData.name,
@@ -98,7 +109,126 @@ export async function getPokemon(nameOrId: string | number): Promise<Pokemon> {
     weight: pokemonData.weight,
     genus,
     flavorText,
+    forms,
   };
+}
+
+function classifyFormType(name: string): PokemonForm['formType'] {
+  if (name.includes('mega')) return 'mega';
+  if (name.includes('gmax')) return 'gmax';
+  if (name.includes('alola')) return 'alolan';
+  if (name.includes('galar')) return 'galarian';
+  if (name.includes('hisui')) return 'hisuian';
+  if (name.includes('paldea')) return 'paldean';
+  return 'other';
+}
+
+function generateFormName(pokemonName: string, baseName: string): string {
+  const suffix = pokemonName.replace(`${baseName}-`, '');
+  const formType = classifyFormType(suffix);
+
+  switch (formType) {
+    case 'mega': {
+      const extra = suffix.replace('mega', '').replace(/-/g, ' ').trim();
+      return extra ? `Mega ${extra.charAt(0).toUpperCase() + extra.slice(1)}` : 'Mega';
+    }
+    case 'gmax':
+      return 'Gigantamax';
+    case 'alolan':
+      return 'Alolan';
+    case 'galarian':
+      return 'Galarian';
+    case 'hisuian':
+      return 'Hisuian';
+    case 'paldean':
+      return 'Paldean';
+    default: {
+      return suffix
+        .split('-')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    }
+  }
+}
+
+export async function getPokemonForms(nameOrId: string | number): Promise<PokemonForm[]> {
+  const identifier = String(nameOrId).toLowerCase();
+
+  const speciesRes = await fetch(`${BASE_URL}/pokemon-species/${identifier}`);
+  if (!speciesRes.ok) {
+    if (speciesRes.status === 404) return [];
+    throw new Error(`Pokemon species not found: ${nameOrId}`);
+  }
+
+  const speciesData = await speciesRes.json();
+  const varieties: { is_default: boolean; pokemon: { name: string; url: string } }[] =
+    speciesData.varieties || [];
+
+  // Filter out the default variety
+  const alternateVarieties = varieties.filter((v) => !v.is_default);
+
+  if (alternateVarieties.length === 0) return [];
+
+  const baseName = speciesData.name as string;
+
+  const formsRaw = await Promise.all(
+    alternateVarieties.map(async (variety): Promise<PokemonForm | null> => {
+      const pokemonRes = await fetch(variety.pokemon.url);
+      if (!pokemonRes.ok) {
+        return null;
+      }
+      const pokemonData = await pokemonRes.json();
+
+      const types = pokemonData.types.map(
+        (t: { type: { name: string } }) => t.type.name
+      );
+
+      const spriteUrl =
+        pokemonData.sprites?.other?.['official-artwork']?.front_default ||
+        pokemonData.sprites?.front_default ||
+        '';
+
+      const statsMap: Record<string, string> = {
+        hp: 'hp',
+        attack: 'attack',
+        defense: 'defense',
+        'special-attack': 'specialAttack',
+        'special-defense': 'specialDefense',
+        speed: 'speed',
+      };
+
+      const stats = {
+        hp: 0,
+        attack: 0,
+        defense: 0,
+        specialAttack: 0,
+        specialDefense: 0,
+        speed: 0,
+      };
+
+      for (const s of pokemonData.stats) {
+        const key = statsMap[s.stat.name as string];
+        if (key) {
+          (stats as Record<string, number>)[key] = s.base_stat;
+        }
+      }
+
+      const formName = generateFormName(variety.pokemon.name, baseName);
+      const formType = classifyFormType(variety.pokemon.name);
+
+      return {
+        id: pokemonData.id,
+        name: variety.pokemon.name,
+        formName,
+        formType,
+        types,
+        spriteUrl,
+        stats,
+      } as PokemonForm;
+    })
+  );
+
+  return formsRaw.filter((f): f is PokemonForm => f !== null);
 }
 
 export async function getEvolutionChain(
