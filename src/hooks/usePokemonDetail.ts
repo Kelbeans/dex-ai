@@ -10,9 +10,9 @@ interface PokemonDetailState {
   error: string | null;
 }
 
-const cache = new Map<number, { pokemon: Pokemon; evolutionChain: EvolutionStage }>();
+const cache = new Map<string, { pokemon: Pokemon; evolutionChain: EvolutionStage }>();
 
-export function usePokemonDetail(pokemonId: number | null): PokemonDetailState {
+export function usePokemonDetail(pokemonName: string | null): PokemonDetailState {
   const [state, setState] = useState<PokemonDetailState>({
     pokemon: null,
     evolutionChain: null,
@@ -23,13 +23,12 @@ export function usePokemonDetail(pokemonId: number | null): PokemonDetailState {
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (pokemonId === null) {
+    if (pokemonName === null) {
       setState({ pokemon: null, evolutionChain: null, isLoading: false, error: null });
       return;
     }
 
-    // Check cache first
-    const cached = cache.get(pokemonId);
+    const cached = cache.get(pokemonName);
     if (cached) {
       setState({
         pokemon: cached.pokemon,
@@ -40,7 +39,6 @@ export function usePokemonDetail(pokemonId: number | null): PokemonDetailState {
       return;
     }
 
-    // Abort previous request
     if (abortRef.current) {
       abortRef.current.abort();
     }
@@ -50,7 +48,7 @@ export function usePokemonDetail(pokemonId: number | null): PokemonDetailState {
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-    fetch(`/api/pokemon/${pokemonId}`, { signal: controller.signal })
+    fetch(`/api/pokemon/${encodeURIComponent(pokemonName)}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) {
           throw new Error(`Failed to fetch Pokemon (${res.status})`);
@@ -60,7 +58,7 @@ export function usePokemonDetail(pokemonId: number | null): PokemonDetailState {
       .then((data: { pokemon: Pokemon; evolutionChain: EvolutionStage }) => {
         if (controller.signal.aborted) return;
 
-        cache.set(pokemonId, data);
+        cache.set(pokemonName, data);
         setState({
           pokemon: data.pokemon,
           evolutionChain: data.evolutionChain,
@@ -81,7 +79,7 @@ export function usePokemonDetail(pokemonId: number | null): PokemonDetailState {
     return () => {
       controller.abort();
     };
-  }, [pokemonId]);
+  }, [pokemonName]);
 
   return state;
 }

@@ -7,15 +7,21 @@ import { ChatInput } from "@/components/ChatInput";
 import { ClearButton } from "@/components/ClearButton";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { BrowsePanel } from "@/components/browse/BrowsePanel";
+import { PokemonDetailModal } from "@/components/PokemonDetailModal";
 import { useChat } from "@/hooks/useChat";
 
 export default function Home() {
   const { messages, isLoading, hydrated, sendMessage, clearHistory } = useChat();
   const [activeTab, setActiveTab] = useState<"browse" | "chat">("chat");
+  const [selectedPokemon, setSelectedPokemon] = useState<string | null>(null);
 
-  const handlePokemonSelect = (id: number, name: string) => {
+  const handlePokemonSelect = (_id: number, name: string) => {
+    setSelectedPokemon(name);
+  };
+
+  const handleAskAI = (name: string) => {
     sendMessage(`Tell me about ${name}`);
-    // On mobile, switch to chat tab after selection
+    setSelectedPokemon(null);
     setActiveTab("chat");
   };
 
@@ -59,18 +65,18 @@ export default function Home() {
 
       {/* Split layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Browse Panel - desktop: always visible, mobile: toggled */}
+        {/* Browse Panel - desktop: half width, mobile: toggled */}
         <div
-          className={`w-full shrink-0 lg:block lg:w-80 ${
+          className={`w-full shrink-0 border-r border-white/10 lg:block lg:w-1/2 ${
             activeTab === "browse" ? "block" : "hidden"
           }`}
         >
           <BrowsePanel onPokemonSelect={handlePokemonSelect} />
         </div>
 
-        {/* Chat area */}
+        {/* Chat area - half width */}
         <div
-          className={`flex flex-1 flex-col overflow-hidden ${
+          className={`flex w-full flex-col overflow-hidden lg:w-1/2 ${
             activeTab === "chat" ? "flex" : "hidden lg:flex"
           }`}
         >
@@ -87,6 +93,11 @@ export default function Home() {
           <ChatInput onSubmit={sendMessage} disabled={isLoading} />
         </div>
       </div>
+      <PokemonDetailModal
+        pokemonName={selectedPokemon}
+        onClose={() => setSelectedPokemon(null)}
+        onAskAI={handleAskAI}
+      />
     </DeviceFrame>
   );
 }

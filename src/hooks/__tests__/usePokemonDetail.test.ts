@@ -26,7 +26,7 @@ describe("usePokemonDetail", () => {
       () => new Promise(() => {})
     );
 
-    const { result } = renderHook(() => usePokemonDetail(25));
+    const { result } = renderHook(() => usePokemonDetail("pikachu"));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.pokemon).toBeNull();
@@ -59,7 +59,7 @@ describe("usePokemonDetail", () => {
       json: () => Promise.resolve(mockData),
     } as Response);
 
-    const { result } = renderHook(() => usePokemonDetail(25));
+    const { result } = renderHook(() => usePokemonDetail("pikachu"));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -77,7 +77,7 @@ describe("usePokemonDetail", () => {
       json: () => Promise.resolve({ error: "Not found" }),
     } as unknown as Response);
 
-    const { result } = renderHook(() => usePokemonDetail(999));
+    const { result } = renderHook(() => usePokemonDetail("fakemon-xyz"));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);

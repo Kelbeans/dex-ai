@@ -10,12 +10,15 @@ interface PokemonCardProps {
 }
 
 export function PokemonCard({ data }: PokemonCardProps) {
-  const primaryType = data.types[0] ?? "normal";
+  if (!data || !data.name) return null;
+
+  const primaryType = data.types?.[0] ?? "normal";
   const glowColor = TYPE_COLORS[primaryType.toLowerCase()] ?? "#68a090";
   const displayName = data.name.charAt(0).toUpperCase() + data.name.slice(1);
-  const displayId = `#${String(data.id).padStart(4, "0")}`;
-  const heightM = (data.height / 10).toFixed(1);
-  const weightKg = (data.weight / 10).toFixed(1);
+  const displayId = data.id ? `#${String(data.id).padStart(4, "0")}` : "";
+  const heightM = data.height ? (data.height / 10).toFixed(1) : "?";
+  const weightKg = data.weight ? (data.weight / 10).toFixed(1) : "?";
+  const artworkUrl = data.sprites?.officialArtwork || data.sprites?.front || "";
 
   return (
     <motion.div
@@ -31,21 +34,27 @@ export function PokemonCard({ data }: PokemonCardProps) {
           style={{ boxShadow: `0 0 20px ${glowColor}40` }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={data.sprites.officialArtwork}
-            alt={data.name}
-            width={120}
-            height={120}
-            className="h-[80px] w-[80px] object-contain md:h-[120px] md:w-[120px]"
-          />
+          {artworkUrl ? (
+            <img
+              src={artworkUrl}
+              alt={data.name}
+              width={120}
+              height={120}
+              className="h-[80px] w-[80px] object-contain md:h-[120px] md:w-[120px]"
+            />
+          ) : (
+            <div className="flex h-[80px] w-[80px] items-center justify-center text-gray-600 md:h-[120px] md:w-[120px]">
+              ?
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-1">
-          <h3 className="font-mono text-lg font-bold text-gray-100">
-            {displayName}{" "}
+          <h3 className="text-lg text-gray-100">
+            <span className="font-pokemon">{displayName}</span>{" "}
             <span className="text-sm text-gray-500">{displayId}</span>
           </h3>
           <div className="flex flex-wrap gap-1">
-            {data.types.map((t) => (
+            {(data.types ?? []).map((t) => (
               <TypeBadge key={t} typeName={t} />
             ))}
           </div>
@@ -53,41 +62,49 @@ export function PokemonCard({ data }: PokemonCardProps) {
       </div>
 
       {/* Stat Radar */}
-      <StatRadar stats={data.stats} primaryType={primaryType} />
+      {data.stats && <StatRadar stats={data.stats} primaryType={primaryType} />}
 
       {/* Abilities */}
-      <div className="mt-2">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-gray-500">
-          Abilities
-        </p>
-        <div className="mt-1 flex flex-wrap gap-2">
-          {data.abilities.map((ability) => (
-            <span
-              key={ability.name}
-              className={`font-mono text-xs ${
-                ability.isHidden
-                  ? "italic text-gray-400"
-                  : "text-gray-300"
-              }`}
-            >
-              {ability.name}
-              {ability.isHidden && (
-                <span className="ml-1 text-[10px] text-red-400/70">(Hidden)</span>
-              )}
-            </span>
-          ))}
+      {data.abilities && data.abilities.length > 0 && (
+        <div className="mt-2">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-gray-500">
+            Abilities
+          </p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {data.abilities.map((ability) => (
+              <span
+                key={ability.name}
+                className={`font-mono text-xs ${
+                  ability.isHidden
+                    ? "italic text-gray-400"
+                    : "text-gray-300"
+                }`}
+              >
+                {ability.name}
+                {ability.isHidden && (
+                  <span className="ml-1 text-[10px] text-red-400/70">(Hidden)</span>
+                )}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Genus + Flavor Text */}
-      <div className="mt-3 border-t border-white/5 pt-2">
-        <p className="font-mono text-xs italic text-gray-400">
-          {data.genus}
-        </p>
-        <p className="mt-1 text-xs italic text-gray-500">
-          {data.flavorText}
-        </p>
-      </div>
+      {(data.genus || data.flavorText) && (
+        <div className="mt-3 border-t border-white/5 pt-2">
+          {data.genus && (
+            <p className="font-mono text-xs italic text-gray-400">
+              {data.genus}
+            </p>
+          )}
+          {data.flavorText && (
+            <p className="mt-1 text-xs italic text-gray-500">
+              {data.flavorText}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Height / Weight */}
       <div className="mt-2 flex gap-4 font-mono text-xs text-gray-400">

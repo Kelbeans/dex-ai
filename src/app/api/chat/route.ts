@@ -1,5 +1,6 @@
 import { SYSTEM_PROMPT } from '@/lib/system-prompt';
 import { AI_TOOLS } from '@/lib/ai-tools';
+import { getCachedResponse, setCachedResponse } from '@/lib/response-cache';
 import {
   getPokemon,
   getPokemonForms,
@@ -13,7 +14,7 @@ export const runtime = 'nodejs';
 const API_TIMEOUT_MS = 60_000;
 const BEDROCK_BASE = process.env.ANTHROPIC_BASE_URL || '';
 const API_KEY = process.env.ANTHROPIC_API_KEY || '';
-const MODEL_ID = process.env.ANTHROPIC_MODEL || 'us.anthropic.claude-opus-4-6-v1';
+const MODEL_ID = process.env.ANTHROPIC_MODEL || 'us.anthropic.claude-haiku-4-5-20251001-v1:0';
 
 interface ToolUseBlock {
   type: 'tool_use';
@@ -133,8 +134,20 @@ export async function POST(request: Request) {
     );
   }
 
-  console.log(`[DexAI] Processing ${body.messages.length} message(s). Last: "${body.messages[body.messages.length - 1]?.content?.slice(0, 50)}"`);
+  const lastUserMessage = body.messages[body.messages.length - 1]?.content || '';
+  console.log(`[DexAI] Processing ${body.messages.length} message(s). Last: "${lastUserMessage.slice(0, 50)}"`);
   console.log(`[DexAI] Model: ${MODEL_ID}`);
+
+  // Check cache for single-turn queries (first message only)
+  if (body.messages.length === 1) {
+    const cached = getCachedResponse(lastUserMessage);
+    if (cached) {
+      console.log(`[DexAI] Cache HIT for: "${lastUserMessage.slice(0, 50)}"`);
+      return new Response(cached, {
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Cache': 'HIT' },
+      });
+    }
+  }
 
   const messages: unknown[] = body.messages.map((msg) => ({
     role: msg.role,
@@ -195,10 +208,17 @@ export async function POST(request: Request) {
 
       console.log(`[DexAI] Response complete after ${i + 1} iteration(s). ${fullText.length} chars`);
 
+      // Cache single-turn responses
+      if (body.messages.length === 1) {
+        setCachedResponse(lastUserMessage, fullText);
+        console.log(`[DexAI] Cached response for: "${lastUserMessage.slice(0, 50)}"`);
+      }
+
       return new Response(fullText, {
         headers: {
           'Content-Type': 'text/plain; charset=utf-8',
           'Cache-Control': 'no-cache',
+          'X-Cache': 'MISS',
         },
       });
     }

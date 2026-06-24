@@ -6,17 +6,25 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const numericId = parseInt(id, 10);
-  if (isNaN(numericId) || numericId < 1) {
+  if (!id || id.trim() === '') {
     return Response.json(
-      { error: 'Invalid Pokemon ID' },
+      { error: 'Invalid Pokemon identifier' },
       { status: 400 }
     );
   }
 
+  const nameOrId = /^\d+$/.test(id) ? parseInt(id, 10) : id.toLowerCase();
+
   try {
-    const pokemon = await getPokemon(numericId);
-    const evolutionChain = await getEvolutionChain(pokemon.name);
+    const pokemon = await getPokemon(nameOrId);
+
+    let evolutionChain = null;
+    try {
+      const baseName = pokemon.name.split('-')[0];
+      evolutionChain = await getEvolutionChain(baseName);
+    } catch {
+      // Some forms don't have evolution chains — that's fine
+    }
 
     return Response.json(
       { pokemon, evolutionChain },

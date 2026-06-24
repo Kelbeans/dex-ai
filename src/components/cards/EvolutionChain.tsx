@@ -45,11 +45,38 @@ function isBranching(stage: EvolutionStage): boolean {
   return false;
 }
 
+function getItemSpriteUrl(itemName: string): string {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemName}.png`;
+}
+
 function getTriggerText(stage: FlatStage): string {
   if (stage.minLevel) return `Lv. ${stage.minLevel}`;
   if (stage.item) return stage.item;
   if (stage.trigger) return stage.trigger;
   return "";
+}
+
+function TriggerDisplay({ stage }: { stage: FlatStage }) {
+  const text = getTriggerText(stage);
+  if (!text) return null;
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      {stage.item && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={getItemSpriteUrl(stage.item)}
+          alt={stage.item}
+          width={24}
+          height={24}
+          className="h-6 w-6 object-contain"
+        />
+      )}
+      <span className="font-mono text-[9px] text-gray-600">
+        {text}
+      </span>
+    </div>
+  );
 }
 
 function capitalize(s: string): string {
@@ -93,11 +120,9 @@ function LinearChain({ stages }: { stages: FlatStage[] }) {
       {stages.map((stage, i) => (
         <div key={stage.species} className="flex items-center gap-1">
           {i > 0 && (
-            <div className="flex flex-col items-center px-1">
+            <div className="flex flex-col items-center px-2">
               <span className="font-mono text-sm text-gray-500">&rarr;</span>
-              <span className="font-mono text-[9px] text-gray-600">
-                {getTriggerText(stage)}
-              </span>
+              <TriggerDisplay stage={stage} />
             </div>
           )}
           <StageDisplay species={stage.species} spriteUrl={stage.spriteUrl} />
@@ -117,30 +142,26 @@ function BranchingChain({ root }: { root: EvolutionStage }) {
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {root.evolvesTo.map((branch) => (
               <div key={branch.species} className="flex flex-col items-center gap-1">
-                <span className="font-mono text-[9px] text-gray-600">
-                  {getTriggerText({
-                    species: branch.species,
-                    spriteUrl: branch.spriteUrl,
-                    trigger: branch.trigger,
-                    minLevel: branch.minLevel,
-                    item: branch.item,
-                  })}
-                </span>
+                <TriggerDisplay stage={{
+                  species: branch.species,
+                  spriteUrl: branch.spriteUrl,
+                  trigger: branch.trigger,
+                  minLevel: branch.minLevel,
+                  item: branch.item,
+                }} />
                 <StageDisplay species={branch.species} spriteUrl={branch.spriteUrl} />
                 {branch.evolvesTo.length > 0 && (
                   <div className="flex flex-col items-center gap-1">
                     {branch.evolvesTo.map((sub) => (
                       <div key={sub.species} className="flex flex-col items-center">
                         <span className="font-mono text-sm text-gray-500">&darr;</span>
-                        <span className="font-mono text-[9px] text-gray-600">
-                          {getTriggerText({
-                            species: sub.species,
-                            spriteUrl: sub.spriteUrl,
-                            trigger: sub.trigger,
-                            minLevel: sub.minLevel,
-                            item: sub.item,
-                          })}
-                        </span>
+                        <TriggerDisplay stage={{
+                          species: sub.species,
+                          spriteUrl: sub.spriteUrl,
+                          trigger: sub.trigger,
+                          minLevel: sub.minLevel,
+                          item: sub.item,
+                        }} />
                         <StageDisplay species={sub.species} spriteUrl={sub.spriteUrl} />
                       </div>
                     ))}

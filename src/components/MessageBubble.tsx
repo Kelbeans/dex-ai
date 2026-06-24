@@ -9,6 +9,33 @@ import { useTypeGlow } from "./TypeGlow";
 
 const SYSTEM_ERROR_PREFIX = "SYSTEM ERROR:";
 
+function renderFormattedText(text: string) {
+  const parts = text.split(/(!\[[^\]]*\]\([^)]+\)|\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    const imgMatch = part.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imgMatch) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={i}
+          src={imgMatch[2]}
+          alt={imgMatch[1]}
+          className="my-2 h-32 w-32 rounded object-contain"
+        />
+      );
+    }
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const inner = part.slice(2, -2);
+      return (
+        <span key={i} className="font-pokemon text-gray-100">
+          {inner}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 interface MessageBubbleProps {
   message: Message;
 }
@@ -64,7 +91,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             : "font-mono text-sm text-gray-300"
         }`}
       >
-        <p className="whitespace-pre-wrap">{message.content}</p>
+        <p className="whitespace-pre-wrap">{renderFormattedText(message.content)}</p>
         {message.cards?.map((card, index) => (
           <motion.div
             key={index}

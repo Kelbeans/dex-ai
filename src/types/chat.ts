@@ -1,5 +1,5 @@
 export interface PokemonCard {
-  type: "pokemon" | "comparison" | "evolution" | "type-chart";
+  type: "pokemon" | "comparison" | "evolution" | "type-chart" | "forms";
   data: Record<string, unknown>;
 }
 

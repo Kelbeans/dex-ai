@@ -17,7 +17,7 @@ export function GenTabs({ activeGen, onGenChange }: GenTabsProps) {
           <button
             key={gen}
             onClick={() => onGenChange(gen)}
-            className={`shrink-0 rounded px-2.5 py-1 font-mono text-xs font-bold transition-colors ${
+            className={`shrink-0 rounded px-2.5 py-1 font-pokemon text-sm transition-colors ${
               isActive
                 ? "border-b-2 border-red-500 text-red-500"
                 : "text-gray-500 hover:text-gray-300"

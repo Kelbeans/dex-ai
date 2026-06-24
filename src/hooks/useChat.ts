@@ -1,22 +1,29 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { Message, PokemonCard } from "@/types/chat";
 import { parseSegments } from "@/lib/stream-parser";
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("dexai-history");
-    if (!stored) return [];
-    try {
-      return JSON.parse(stored);
-    } catch {
-      return [];
-    }
-  });
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("dexai-history");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        console.log(`[DexAI] Loaded ${parsed.length} messages from localStorage`);
+        setMessages(parsed);
+      } catch {
+        console.warn("[DexAI] Corrupted localStorage data, clearing");
+        localStorage.removeItem("dexai-history");
+      }
+    }
+    setHydrated(true);
+  }, []);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -32,6 +39,8 @@ export function useChat() {
         content,
         timestamp: Date.now(),
       };
+
+      console.log(`[DexAI] Sending message: "${content.slice(0, 50)}..."`);
 
       const updatedMessages = [...messages, userMessage];
       setMessages(updatedMessages);
@@ -61,6 +70,7 @@ export function useChat() {
         });
 
         if (!response.ok) {
+          console.error(`[DexAI] API returned ${response.status}`);
           // Read JSON error body from the API
           let errorText = `API error: ${response.status}`;
           try {
@@ -131,9 +141,11 @@ export function useChat() {
         const finalMessages = [...updatedMessages, finalMessage];
         setMessages(finalMessages);
         localStorage.setItem("dexai-history", JSON.stringify(finalMessages));
+        console.log(`[DexAI] Response complete. ${cards.length} card(s) rendered.`);
       } catch (error) {
         if ((error as Error).name === "AbortError") return;
         // Network errors and other fetch failures
+        console.error("[DexAI] Fetch error:", error instanceof Error ? error.message : error);
         const errorText =
           error instanceof Error
             ? error.message
@@ -161,5 +173,5 @@ export function useChat() {
     localStorage.removeItem("dexai-history");
   }, []);
 
-  return { messages, isLoading, sendMessage, clearHistory };
+  return { messages, isLoading, hydrated, sendMessage, clearHistory };
 }

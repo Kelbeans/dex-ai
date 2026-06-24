@@ -2,14 +2,17 @@
 
 import { useState, useEffect } from "react";
 import type { PokemonListItem } from "@/lib/pokemon-list";
+import type { PokemonCategory } from "./CategoryTabs";
+import { filterByCategory } from "@/lib/pokemon-categories";
 
 interface PokemonGridProps {
   gen: number;
   filter: string;
+  category: PokemonCategory;
   onSelect: (id: number, name: string) => void;
 }
 
-export function PokemonGrid({ gen, filter, onSelect }: PokemonGridProps) {
+export function PokemonGrid({ gen, filter, category, onSelect }: PokemonGridProps) {
   const [pokemon, setPokemon] = useState<PokemonListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,20 +45,22 @@ export function PokemonGrid({ gen, filter, onSelect }: PokemonGridProps) {
     };
   }, [gen]);
 
+  const categoryFiltered = filterByCategory(pokemon, category);
   const filtered = filter
-    ? pokemon.filter((p) => p.name.includes(filter.toLowerCase()))
-    : pokemon;
+    ? categoryFiltered.filter((p) => p.name.includes(filter.toLowerCase()))
+    : categoryFiltered;
 
   if (loading) {
     return (
-      <div className="grid grid-cols-3 gap-2 p-2">
-        {Array.from({ length: 12 }).map((_, i) => (
+      <div className="grid grid-cols-6 gap-2 p-3">
+        {Array.from({ length: 18 }).map((_, i) => (
           <div
             key={i}
-            className="flex flex-col items-center gap-1 rounded bg-white/5 p-2"
+            className="flex flex-col items-center justify-center gap-2 rounded-lg bg-white/5 p-3"
+            style={{ height: "calc((100vh - 120px) / 3)" }}
           >
-            <div className="h-12 w-12 animate-pulse rounded bg-gray-700" />
-            <div className="h-3 w-10 animate-pulse rounded bg-gray-700" />
+            <div className="h-20 w-20 animate-pulse rounded bg-gray-700" />
+            <div className="h-3 w-14 animate-pulse rounded bg-gray-700" />
           </div>
         ))}
       </div>
@@ -79,23 +84,27 @@ export function PokemonGrid({ gen, filter, onSelect }: PokemonGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-2 overflow-y-auto p-2">
-      {filtered.map((p) => (
+    <div className="grid grid-cols-6 gap-2 overflow-y-auto p-3">
+      {filtered.map((p, idx) => (
         <button
-          key={p.id}
+          key={`${p.name}-${idx}`}
           onClick={() => onSelect(p.id, p.name)}
-          className="flex flex-col items-center gap-1 rounded bg-white/5 p-2 transition-all hover:scale-105 hover:bg-white/10 hover:shadow-[0_0_8px_rgba(239,68,68,0.3)]"
+          className="flex flex-col items-center justify-center gap-1 rounded-lg bg-white/5 p-3 transition-all hover:scale-[1.03] hover:bg-white/10 hover:shadow-[0_0_12px_rgba(239,68,68,0.3)]"
+          style={{ height: "calc((100vh - 120px) / 3)" }}
         >
+          <span className="font-mono text-xs text-gray-600">
+            #{String(p.id).padStart(3, "0")}
+          </span>
           <img
             src={p.spriteUrl}
             alt={p.name}
-            width={48}
-            height={48}
+            width={180}
+            height={180}
             loading="lazy"
-            className="pixelated"
+            className="object-contain"
           />
-          <span className="font-mono text-[10px] capitalize text-gray-400">
-            {p.name}
+          <span className="font-pokemon text-base capitalize text-gray-400">
+            {p.name.replace(/-/g, " ")}
           </span>
         </button>
       ))}

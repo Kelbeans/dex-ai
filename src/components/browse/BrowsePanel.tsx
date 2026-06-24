@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { GenTabs } from "./GenTabs";
+import { CategoryTabs } from "./CategoryTabs";
+import type { PokemonCategory } from "./CategoryTabs";
 import { PokemonGrid } from "./PokemonGrid";
 
 interface BrowsePanelProps {
@@ -10,6 +12,7 @@ interface BrowsePanelProps {
 
 export function BrowsePanel({ onPokemonSelect }: BrowsePanelProps) {
   const [activeGen, setActiveGen] = useState(1);
+  const [activeCategory, setActiveCategory] = useState<PokemonCategory>("all");
   const [searchFilter, setSearchFilter] = useState("");
 
   return (
@@ -21,7 +24,7 @@ export function BrowsePanel({ onPokemonSelect }: BrowsePanelProps) {
           placeholder="SEARCH..."
           value={searchFilter}
           onChange={(e) => setSearchFilter(e.target.value)}
-          className="w-full rounded border border-white/10 bg-black/60 px-2 py-1 font-mono text-xs text-gray-300 placeholder-gray-600 outline-none transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
+          className="w-full rounded border border-white/10 bg-black/60 px-3 py-1.5 text-sm text-gray-300 placeholder-gray-600 outline-none transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/30"
         />
       </div>
 
@@ -30,11 +33,17 @@ export function BrowsePanel({ onPokemonSelect }: BrowsePanelProps) {
         <GenTabs activeGen={activeGen} onGenChange={setActiveGen} />
       </div>
 
+      {/* Category Filter */}
+      <div className="border-b border-white/10">
+        <CategoryTabs active={activeCategory} onChange={setActiveCategory} />
+      </div>
+
       {/* Pokemon Grid */}
       <div className="flex-1 overflow-y-auto">
         <PokemonGrid
           gen={activeGen}
           filter={searchFilter}
+          category={activeCategory}
           onSelect={onPokemonSelect}
         />
       </div>

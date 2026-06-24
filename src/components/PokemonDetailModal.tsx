@@ -8,17 +8,17 @@ import { StatRadar } from "@/components/cards/StatRadar";
 import { EvolutionChain } from "@/components/cards/EvolutionChain";
 
 interface PokemonDetailModalProps {
-  pokemonId: number | null;
+  pokemonName: string | null;
   onClose: () => void;
   onAskAI: (name: string) => void;
 }
 
 export function PokemonDetailModal({
-  pokemonId,
+  pokemonName,
   onClose,
   onAskAI,
 }: PokemonDetailModalProps) {
-  const { pokemon, evolutionChain, isLoading, error } = usePokemonDetail(pokemonId);
+  const { pokemon, evolutionChain, isLoading, error } = usePokemonDetail(pokemonName);
 
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -28,11 +28,11 @@ export function PokemonDetailModal({
   );
 
   useEffect(() => {
-    if (pokemonId !== null) {
+    if (pokemonName !== null) {
       document.addEventListener("keydown", handleEscape);
       return () => document.removeEventListener("keydown", handleEscape);
     }
-  }, [pokemonId, handleEscape]);
+  }, [pokemonName, handleEscape]);
 
   const handleAskAI = () => {
     if (pokemon) {
@@ -41,7 +41,7 @@ export function PokemonDetailModal({
     }
   };
 
-  const isOpen = pokemonId !== null;
+  const isOpen = pokemonName !== null;
 
   return (
     <AnimatePresence>
@@ -162,7 +162,7 @@ function PokemonContent({
           />
         </div>
         <div className="flex flex-col gap-2 pt-2">
-          <h2 className="font-mono text-xl font-bold text-gray-100">
+          <h2 className="font-pokemon text-xl text-gray-100">
             {displayName}
           </h2>
           <span className="font-mono text-sm text-gray-500">{displayId}</span>
@@ -201,6 +201,41 @@ function PokemonContent({
 
       {/* Evolution Chain */}
       {evolutionChain && <EvolutionChain data={evolutionChain} />}
+
+      {/* Alternate Forms (Mega, Gmax, Regional) */}
+      {pokemon.forms && pokemon.forms.length > 0 && (
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-gray-500">
+            Alternate Forms
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {pokemon.forms.map((form) => (
+              <div key={form.name} className="flex flex-col items-center gap-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {form.spriteUrl ? (
+                  <img
+                    src={form.spriteUrl}
+                    alt={form.formName}
+                    width={64}
+                    height={64}
+                    className="h-16 w-16 object-contain"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center text-gray-600">?</div>
+                )}
+                <span className="font-pokemon text-[10px] text-gray-400">
+                  {form.formName}
+                </span>
+                <div className="flex gap-0.5">
+                  {(form.types ?? []).map((t) => (
+                    <TypeBadge key={t} typeName={t} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Genus + Flavor Text */}
       <div className="border-t border-white/5 pt-3">
